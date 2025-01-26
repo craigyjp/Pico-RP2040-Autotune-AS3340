@@ -27,13 +27,6 @@
 #include "Hardware.h"
 #include <Adafruit_NeoPixel.h>
 
-// OLED I2C is used on pins 18 and 19 for Teensy 3.x
-
-// #define OLED_RESET 17
-// #define SCREEN_WIDTH 128  // OLED display width, in pixels
-// #define SCREEN_HEIGHT 64  // OLED display height, in pixels
-// Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 struct VoiceAndNote {
   int note;
   int velocity;
@@ -341,37 +334,6 @@ void loadSDCardNow() {
   loadTuningCorrectionsFromSD();
 }
 
-// void debugFrequencyReading() {
-//   float frequency = directCountAverage(3);  // Average over 3 measurements
-//   Serial.println(frequency, 1);             // Print frequency with 1 decimal place
-// }
-
-// float directCountAverage(int numSamples) {
-//   float total = 0.0f;
-//   for (int i = 0; i < numSamples; i++) {
-//     total += directCount();  // Call directCount() for each sample
-//   }
-//   return total / numSamples;  // Return the average frequency
-// }
-
-// void my_isr() {
-//   count++;
-// }
-
-// float directCount() {
-//   count = 0;                      // Reset the count
-//   uint32_t startTime = micros();  // Start time
-//   uint32_t duration = 1E6;        // Measure for 1 second (1E6 microseconds)
-//   uint32_t targetTime = startTime + duration;
-
-//   while (micros() < targetTime) {
-//     // Wait for the 1-second measurement window
-//   }
-
-//   // Calculate frequency as events per second
-//   return static_cast<float>(count);
-// }
-
 void debugFrequencyReading() {
   float frequency = directCount(targetFrequency); // Measure frequency
     Serial.print("Frequency: ");
@@ -413,42 +375,6 @@ float directCount(float targetFreq) {
     return frequency;
 }
 
-// Frequency measurement routine with 0.1 Hz resolution
-// float directCount() {
-//     count = 0; // Reset count
-//     uint32_t measurementDuration = 10E6; // 10 seconds (10,000,000 microseconds)
-//     uint32_t startTime = micros(); // Record the start time
-
-//     // Enable interrupt for rising edge detection
-//     attachInterrupt(digitalPinToInterrupt(AUTO_INPUT), my_isr, RISING);
-
-//     // Wait for the measurement duration
-//     while (micros() - startTime < measurementDuration) {
-//         // You can perform other non-blocking tasks here if needed
-//     }
-
-//     // Disable interrupt to stop counting
-//     detachInterrupt(digitalPinToInterrupt(AUTO_INPUT));
-
-//     // Calculate frequency with 0.1 Hz resolution
-//     return static_cast<float>(count) / 10.0;
-// }
-
-// long directCount() {
-//   count = 0;
-//   const int scale = 10;
-//   uint32_t t = micros() + 1E6 / scale;
-//   uint32_t a = digitalReadFast(AUTO_INPUT);
-//   while (micros() < t) {
-//     uint32_t b = digitalReadFast(AUTO_INPUT);
-//     // rising edge:
-//     if (a < b) count++;
-//     a = b;
-//   }
-//   return scale * count;
-// }
-
-
 void loop() {
 
   if (autotuneStart) {
@@ -459,7 +385,6 @@ void loop() {
     mod_task();
     adjustInterval();
     updateVoice1();
-    //debugFrequencyReading();
   }
 }
 

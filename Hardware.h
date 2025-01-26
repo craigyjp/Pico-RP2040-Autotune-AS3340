@@ -1,4 +1,4 @@
-#define NOTE_SF 135.7
+#define NOTE_SF 137.2
 #define VEL_SF 256.0
 #define ARRAY_SIZE 128
 #define N_LAST_POINTS 10 
