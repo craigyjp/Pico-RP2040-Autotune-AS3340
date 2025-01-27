@@ -26,6 +26,8 @@
 #include "Parameters.h"
 #include "Hardware.h"
 #include <Adafruit_NeoPixel.h>
+#include <FS.h>
+#include <LittleFS.h>
 
 struct VoiceAndNote {
   int note;
@@ -69,9 +71,16 @@ Adafruit_NeoPixel pixels(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 void setup() {
   Serial.begin(115200);
 
-  pinMode(AUTO_INPUT, INPUT_PULLUP);
+  while (!Serial); // Wait for Serial to connect
 
-  //attachInterrupt(digitalPinToInterrupt(AUTO_INPUT), &my_isr, RISING);
+  if (!LittleFS.begin()) {
+    Serial.println("Failed to mount LittleFS");
+    return;
+  }
+
+  Serial.println("LittleFS mounted successfully");
+  
+  pinMode(AUTO_INPUT, INPUT_PULLUP);
 
   SPI.setSCK(2);
   SPI.setRX(4);
@@ -99,53 +108,72 @@ void setup() {
   loadTuningCorrectionsFromSD();
 }
 
-void saveTuningCorrectionsToSD() {
-  // if (SD.exists("tuning.txt")) {
-  //   SD.remove("tuning.txt");  // Remove any existing file
-  // }
+void readNoteCV() {
+  int adcValue = analogRead(VOLT_OCT_INPUT);
+  float voltage = (adcValue / (float)ADC_RESOLUTION) * ADC_REF_VOLTAGE;
+  int midiNote = (int)(voltage * 12.0);
+  midiNote = constrain(midiNote, 0, 127);
+  if (midiNote > 0) {
+  myNoteOn(1, midiNote, 127);
+  }
+}
 
-  // File file = SD.open("tuning.txt", FILE_WRITE);
-  // if (file) {
-  //   for (int o = 0; o < (numOscillators + 1); o++) {
-  //     for (int i = 0; i < 128; i++) {
-  //       file.print(i);                       // Note
-  //       file.print(",");                     // Delimiter
-  //       file.print(o);                       // Oscillator
-  //       file.print(",");                     // Delimiter
-  //       file.println(autotune_value[i][o]);  // Value
-  //     }
-  //   }
-  //   file.close();
-  //   Serial.println("Autotune values saved as strings.");
-  // } else {
-  //   Serial.println("Error opening file for writing.");
-  // }
+void saveTuningCorrectionsToSD() {
+ // Remove the file if it exists
+  if (LittleFS.exists("tuning.txt")) {
+    LittleFS.remove("tuning.txt");
+  }
+
+  // Open the file for writing
+  File file = LittleFS.open("tuning.txt", "w");
+  if (file) {
+    for (int o = 0; o < (numOscillators + 1); o++) {
+      for (int i = 0; i < 128; i++) {
+        file.print(i);                       // Note
+        file.print(",");                     // Delimiter
+        file.print(o);                       // Oscillator
+        file.print(",");                     // Delimiter
+        file.println(autotune_value[i][o]);  // Value
+      }
+    }
+    file.close();
+    Serial.println("Autotune values saved to LittleFS.");
+  } else {
+    Serial.println("Error opening file for writing.");
+  }
 }
 
 void loadTuningCorrectionsFromSD() {
-  // File tuningFile = SD.open("tuning.txt", FILE_READ);
-  // if (tuningFile) {
-  //   while (tuningFile.available()) {
-  //     String line = tuningFile.readStringUntil('\n');  // Read a line
-  //     int comma1 = line.indexOf(',');                  // Find the first comma
-  //     int comma2 = line.lastIndexOf(',');              // Find the last comma
+  // Open the file for reading
+  File file = LittleFS.open("tuning.txt", "r");
+  if (file) {
+    while (file.available()) {
+      // Read a line from the file
+      String line = file.readStringUntil('\n');
 
-  //     // Extract and parse note, oscillator, and value
-  //     int note = line.substring(0, comma1).toInt();
-  //     int osc = line.substring(comma1 + 1, comma2).toInt();
-  //     int value = line.substring(comma2 + 1).toInt();
+      // Parse the line
+      int firstComma = line.indexOf(','); // First delimiter
+      int secondComma = line.lastIndexOf(','); // Second delimiter
 
-  //     if (note >= 0 && note < 128 && osc >= 0 && osc < (numOscillators + 1)) {
-  //       autotune_value[note][osc] = value;
-  //     } else {
-  //       Serial.println("Invalid data format in tuning file.");
-  //     }
-  //   }
-  //   tuningFile.close();
-  //   Serial.println("Tuning corrections loaded from strings.");
-  // } else {
-  //   Serial.println("Failed to open tuning file for reading.");
-  // }
+      // Extract note, oscillator, and value
+      if (firstComma != -1 && secondComma != -1 && secondComma > firstComma) {
+        int note = line.substring(0, firstComma).toInt();
+        int osc = line.substring(firstComma + 1, secondComma).toInt();
+        int value = line.substring(secondComma + 1).toInt();
+
+        // Validate indices and populate the array
+        if (note >= 0 && note < 128 && osc >= 0 && osc <= numOscillators) {
+          autotune_value[note][osc] = value;
+        } else {
+          Serial.println("Invalid data in tuning.txt");
+        }
+      }
+    }
+    file.close();
+    Serial.println("Tuning corrections loaded from LittleFS.");
+  } else {
+    Serial.println("Failed to open tuning.txt on LittleFS.");
+  }
 }
 
 void startAutotune() {
@@ -382,6 +410,7 @@ void loop() {
   } else {
     updateTimers();
     MIDI.read(masterChan);  //MIDI 5 Pin DIN
+    //readNoteCV();
     mod_task();
     adjustInterval();
     updateVoice1();
