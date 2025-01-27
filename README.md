@@ -13,9 +13,8 @@ Using a Waveshare Zero Rp2040, the CV's, Pitchbend, CC, gates and triggers will 
 * 1 gate outputs
 * 1 trigger outputs
 * Pitchbend, channel aftertouch and CC outputs
-* Sustain pedal support over MIDI
-* Oscillator 2 detune (CV outputs 9-16)
-* Oscillator 2 interval settings 0-12 semitones (CV outputs 9-16)
+* Oscillator 2 detune 
+* Oscillator 2 interval settings 0-12 semitones 
 
 # During the testing all the controls were done manually with pots and buttons, but to be integrated into a synth these functions need to be controlled over MIDI.
 
