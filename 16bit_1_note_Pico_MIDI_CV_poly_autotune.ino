@@ -52,9 +52,6 @@ struct VoiceAndNote voices[NO_OF_VOICES] = {
 };
 
 boolean voiceOn[NO_OF_VOICES] = { false };
-int voiceToReturn = -1;        //Initialise to 'null'
-long earliestTime = millis();  //For voice allocation - initialise to now
-int prevNote = 0;              //Initialised to middle value
 bool notes[128] = { 0 }, initial_loop = 1;
 int8_t noteOrder[40] = { 0 }, orderIndx = { 0 };
 bool S1, S2;
@@ -690,19 +687,6 @@ void myControlChange(byte channel, byte number, byte value) {
         }
         break;
 
-      case 64:
-        switch (value) {
-          case 127:
-            sustainOn = true;
-            sustainNotes();
-            break;
-          case 0:
-            sustainOn = false;
-            unsustainNotes();
-            break;
-        }
-        break;
-
       case 65:  // Portamento on/off
         switch (value) {
           case 127:
@@ -761,25 +745,6 @@ void mod_task() {
   FM_AT_VALUE = map(MOD_VALUE, 0, 4095, FM_AT_RANGE_LOWER, FM_AT_RANGE_UPPER);
   TM_VALUE = map(MOD_VALUE, 0, 4095, TM_RANGE_LOWER, TM_RANGE_UPPER);
   TM_AT_VALUE = map(MOD_VALUE, 0, 4095, TM_AT_RANGE_LOWER, TM_AT_RANGE_UPPER);
-}
-
-void unsustainNotes() {  // Unsustain notes
-  for (int i = 0; i < (polyphony + 2); i++) {
-    if (voices[i].keyDown) {
-      voices[i].sustained = false;
-      sendnote = voices[i].note;
-      sendvelocity = voices[i].velocity;
-      myNoteOff(masterChan, sendnote, sendvelocity);
-    }
-  }
-}
-
-void sustainNotes() {  // Sustain notes
-  for (int i = 0; i < (polyphony + 2); i++) {
-    if (voiceOn[i]) {
-      voices[i].sustained = true;
-    }
-  }
 }
 
 void commandTopNote() {
@@ -1013,7 +978,7 @@ void allNotesOff() {
 }
 
 void outputDAC(int CHIP_SELECT, uint32_t sample_data) {
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE1));
+  SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
   digitalWrite(CHIP_SELECT, LOW);
   delayMicroseconds(1);
   SPI.transfer16(sample_data >> 16);

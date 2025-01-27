@@ -166,7 +166,6 @@ int OCTAVE_A = 0;
 int OCTAVE_B = 0;
 int VOLTOFFSET = 3270;
 int oscillator;
-int lastUsedVoice = 0; // Global variable to store the last used voice
 
 //
 // Modulation
@@ -199,14 +198,11 @@ int DETUNE = 0;
 int INTERVAL_POT = 0;
 int INTERVAL = 0;
 
-int encoderPos, encoderPosPrev;
-
-int polyphony;
 int masterChan;
 int masterTran;
 int previousMode;
 int transpose = 0;
-int8_t d2, i;
+int8_t i;
 int noteMsg;
 int keyboardMode = 2;
 int octave = 0;
@@ -215,59 +211,26 @@ int bend_data;
 int note1;
 int oscanote1;
 int oscbnote1;
-int numPlayingVoices = 0;
-bool sustainOn = false;
 bool reset = false;
 bool displayvalues = false;
 bool osc1Through = false;
-bool clearEEPROM = false;
 byte sendnote, sendvelocity;
 
 float oscillator1a = 1.000;
-float oscillator2a = 1.000;
-float oscillator3a = 1.000;
-float oscillator4a = 1.000;
-float oscillator5a = 1.000;
-float oscillator6a = 1.000;
-float oscillator7a = 1.000;
-float oscillator8a = 1.000;
 float oscillator1b = 1.000;
-float oscillator2b = 1.000;
-float oscillator3b = 1.000;
-float oscillator4b = 1.000;
-float oscillator5b = 1.000;
-float oscillator6b = 1.000;
-float oscillator7b = 1.000;
-float oscillator8b = 1.000;
 
 unsigned int velmV;
 unsigned int mV;
 
 float noteTrig[8];
-float monoTrig;
-float unisonTrig;
 
 uint32_t int_ref_on_flexible_mode = 0b00001001000010100000000000000000;  // { 0000 , 1001 , 0000 , 1010000000000000 , 0000 }
 
 uint32_t sample_data = 0b00000000000000000000000000000000;
 
 uint32_t sample_data1 = 0b00000000000000000000000000000000;
-uint32_t sample_data2 = 0b00000000000000000000000000000000;
-uint32_t sample_data3 = 0b00000000000000000000000000000000;
-uint32_t sample_data4 = 0b00000000000000000000000000000000;
-uint32_t sample_data5 = 0b00000000000000000000000000000000;
-uint32_t sample_data6 = 0b00000000000000000000000000000000;
-uint32_t sample_data7 = 0b00000000000000000000000000000000;
-uint32_t sample_data8 = 0b00000000000000000000000000000000;
 
 uint32_t vel_data1 = 0b00000000000000000000000000000000;
-uint32_t vel_data2 = 0b00000000000000000000000000000000;
-uint32_t vel_data3 = 0b00000000000000000000000000000000;
-uint32_t vel_data4 = 0b00000000000000000000000000000000;
-uint32_t vel_data5 = 0b00000000000000000000000000000000;
-uint32_t vel_data6 = 0b00000000000000000000000000000000;
-uint32_t vel_data7 = 0b00000000000000000000000000000000;
-uint32_t vel_data8 = 0b00000000000000000000000000000000;
 
 uint32_t channel_a = 0b00000010000000000000000000000000;
 uint32_t channel_b = 0b00000010000100000000000000000000;
@@ -277,7 +240,3 @@ uint32_t channel_e = 0b00000010010000000000000000000000;
 uint32_t channel_f = 0b00000010010100000000000000000000;
 uint32_t channel_g = 0b00000010011000000000000000000000;
 uint32_t channel_h = 0b00000010011100000000000000000000;
-
-bool highlightEnabled = false;   // Flag indicating whether highighting should be enabled on menu
-#define HIGHLIGHT_TIMEOUT 20000  // Highlight disappears after 20 seconds.  Timer resets whenever encoder turned or button pushed
-unsigned long int highlightTimer = 0;
