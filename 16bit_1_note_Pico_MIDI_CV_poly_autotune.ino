@@ -1,12 +1,13 @@
 /*
-       MIDI to CV
+       MIDI to CV with Autotune
 
-      Version 1.0
+       For RP2040
+
+       Filesystem 1.5Mb/0.5Mb
+
+      Version 1.1
 
       Copyright (C) 2020 Craig Barnes
-
-      A big thankyou to Elkayem for his midi to cv code
-      A big thankyou to ElectroTechnique for his polyphonic tsynth that I used for the poly notes routine
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -63,15 +64,16 @@ bool S1, S2;
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial1, MIDI);
 const int channel = 1;
 
-#define LED_PIN 23           // Define the pin for the built-in RGB LED
-#define NUM_PIXELS 1         // Number of WS2812 LEDs
+#define LED_PIN 23    // Define the pin for the built-in RGB LED
+#define NUM_PIXELS 1  // Number of WS2812 LEDs
 
 Adafruit_NeoPixel pixels(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
 
-  while (!Serial); // Wait for Serial to connect
+  while (!Serial)
+    ;  // Wait for Serial to connect
 
   if (!LittleFS.begin()) {
     Serial.println("Failed to mount LittleFS");
@@ -79,7 +81,7 @@ void setup() {
   }
 
   Serial.println("LittleFS mounted successfully");
-  
+
   pinMode(AUTO_INPUT, INPUT_PULLUP);
 
   SPI.setSCK(2);
@@ -100,7 +102,7 @@ void setup() {
   MIDI.setHandleAfterTouchChannel(myAfterTouch);
   Serial.println("MIDI In DIN Listening");
 
-  pixels.begin(); 
+  pixels.begin();
   delay(500);
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));  // GREEN
   pixels.show();
@@ -109,17 +111,40 @@ void setup() {
 }
 
 void readNoteCV() {
+  // Step 1: Read the analog input (0-4095 for 12-bit ADC)
   int adcValue = analogRead(VOLT_OCT_INPUT);
-  float voltage = (adcValue / (float)ADC_RESOLUTION) * ADC_REF_VOLTAGE;
+
+  // Debug output for the ADC value
+  Serial.print("ADC Value: ");
+  Serial.println(adcValue);
+
+  // Step 2: Convert the ADC value to voltage
+  float voltage = (adcValue / (float)4096) * ADC_REF_VOLTAGE;
+
+  // Step 3: Map voltage (1V/octave) to MIDI note (12 notes per octave)
   int midiNote = (int)(voltage * 12.0);
+
+  // Debug output for calculated MIDI note
+  Serial.print("Calculated MIDI Note: ");
+  Serial.println(midiNote);
+
+  // Step 4: Constrain the MIDI note to the valid range (0-127)
   midiNote = constrain(midiNote, 0, 127);
-  if (midiNote > 0) {
-  myNoteOn(1, midiNote, 127);
+
+  // Step 5: Avoid retriggers for the same note
+  if (midiNote != previousMidiNote) {
+    if (midiNote > 0) {                     // Only trigger if the note is above 0
+      myNoteOn(masterChan, midiNote, 127);  // Send MIDI Note On
+      if (previousMidiNote >= 0) {
+        myNoteOff(masterChan, previousMidiNote, 127);  // Turn off the previous note
+      }
+    }
+    previousMidiNote = midiNote;  // Update the last MIDI note
   }
 }
 
 void saveTuningCorrectionsToSD() {
- // Remove the file if it exists
+  // Remove the file if it exists
   if (LittleFS.exists("tuning.txt")) {
     LittleFS.remove("tuning.txt");
   }
@@ -152,8 +177,8 @@ void loadTuningCorrectionsFromSD() {
       String line = file.readStringUntil('\n');
 
       // Parse the line
-      int firstComma = line.indexOf(','); // First delimiter
-      int secondComma = line.lastIndexOf(','); // Second delimiter
+      int firstComma = line.indexOf(',');       // First delimiter
+      int secondComma = line.lastIndexOf(',');  // Second delimiter
 
       // Extract note, oscillator, and value
       if (firstComma != -1 && secondComma != -1 && secondComma > firstComma) {
@@ -363,44 +388,44 @@ void loadSDCardNow() {
 }
 
 void debugFrequencyReading() {
-  float frequency = directCount(targetFrequency); // Measure frequency
-    Serial.print("Frequency: ");
-    Serial.print(frequency, 1); // Print frequency with 0.1 Hz resolution
-    Serial.println(" Hz");
+  float frequency = directCount(targetFrequency);  // Measure frequency
+  Serial.print("Frequency: ");
+  Serial.print(frequency, 1);  // Print frequency with 0.1 Hz resolution
+  Serial.println(" Hz");
 }
 
 void my_isr() {
-    count++; // Increment count on each rising edge
+  count++;  // Increment count on each rising edge
 }
 
 float directCount(float targetFreq) {
-    count = 0; // Reset count
+  count = 0;  // Reset count
 
-    // Dynamically calculate measurement time in microseconds
-    uint32_t measurementDuration;
-    if (targetFreq <= 50.0) {
-        measurementDuration = 2E6; // 2 seconds for low frequencies (<= 50 Hz)
-    } else if (targetFreq <= 100.0) {
-        measurementDuration = 1E6; // 1 second for moderate frequencies
-    } else {
-        measurementDuration = 5E5; // 500 ms for higher frequencies
-    }
+  // Dynamically calculate measurement time in microseconds
+  uint32_t measurementDuration;
+  if (targetFreq <= 50.0) {
+    measurementDuration = 2E6;  // 2 seconds for low frequencies (<= 50 Hz)
+  } else if (targetFreq <= 100.0) {
+    measurementDuration = 1E6;  // 1 second for moderate frequencies
+  } else {
+    measurementDuration = 5E5;  // 500 ms for higher frequencies
+  }
 
-    uint32_t startTime = micros();
-    uint32_t targetTime = startTime + measurementDuration;
+  uint32_t startTime = micros();
+  uint32_t targetTime = startTime + measurementDuration;
 
-    // Enable interrupt for rising edge detection
-    attachInterrupt(digitalPinToInterrupt(AUTO_INPUT), my_isr, RISING);
+  // Enable interrupt for rising edge detection
+  attachInterrupt(digitalPinToInterrupt(AUTO_INPUT), my_isr, RISING);
 
-    // Wait for the measurement duration
-    while (micros() - startTime < measurementDuration) {}
+  // Wait for the measurement duration
+  while (micros() - startTime < measurementDuration) {}
 
-    // Disable interrupt to stop counting
-    detachInterrupt(digitalPinToInterrupt(AUTO_INPUT));
+  // Disable interrupt to stop counting
+  detachInterrupt(digitalPinToInterrupt(AUTO_INPUT));
 
-    // Calculate frequency based on the measurement time
-    float frequency = static_cast<float>(count) * (1E6 / measurementDuration);
-    return frequency;
+  // Calculate frequency based on the measurement time
+  float frequency = static_cast<float>(count) * (1E6 / measurementDuration);
+  return frequency;
 }
 
 void loop() {
@@ -601,6 +626,12 @@ void myControlChange(byte channel, byte number, byte value) {
         TM_RANGE_LOWER = (TM_RANGE_UPPER - TM_RANGE_UPPER - TM_RANGE_UPPER);
         break;
 
+      case 5:                                           // Portamento time
+        portamentoTime = map(value, 0, 127, 0, 10000);  // Map to a max of 2 seconds
+        Serial.print("Portamento Time: ");
+        Serial.println(portamentoTime);
+        break;
+
       case 14:
         INTERVAL_POT = map(value, 0, 127, 0, 12);
         break;
@@ -672,6 +703,22 @@ void myControlChange(byte channel, byte number, byte value) {
         }
         break;
 
+      case 65:  // Portamento on/off
+        switch (value) {
+          case 127:
+            portamentoOn = true;
+            Serial.print("Portamento On: ");
+            Serial.println(portamentoOn);
+            break;
+          case 0:
+            isPortamentoActive = false;
+            portamentoOn = false;
+            Serial.print("Portamento Off: ");
+            Serial.println(portamentoOn);
+            break;
+        }
+        break;
+
       case 121:
         switch (value) {
           case 127:
@@ -689,8 +736,8 @@ void myControlChange(byte channel, byte number, byte value) {
         break;
 
       case 127:
-        keyboardMode = map(value, 0, 127, 0, 7);
-        if (keyboardMode > 0 && keyboardMode < 8) {
+        keyboardMode = map(value, 0, 127, 0, 2);
+        if (keyboardMode > 0 && keyboardMode < 3) {
           allNotesOff();
         }
         break;
@@ -767,7 +814,7 @@ void commandBottomNote() {
   if (noteActive) {
     commandNote(bottomNote);
   } else {  // All notes are off, turn off gate
-            digitalWrite(GATE_NOTE1, LOW);
+    digitalWrite(GATE_NOTE1, LOW);
   }
 }
 
@@ -852,93 +899,24 @@ void commandNoteUni(int noteMsg) {
 }
 
 void myNoteOn(byte channel, byte note, byte velocity) {
+
   //Check for out of range notes
   if (note < 0 || note > 127) return;
 
-  prevNote = note;
   switch (keyboardMode) {
+
     case 0:
-      switch (getVoiceNo(-1)) {
-        case 1:
-          voices[0].note = note;
-          note1 = note;
-          voices[0].velocity = velocity;
-          voices[0].timeOn = millis();
-          voices[0].keyDown = true;
-          digitalWrite(GATE_NOTE1, HIGH);
-          digitalWrite(TRIG_NOTE1, HIGH);
-          noteTrig[0] = millis();
-          voiceOn[0] = true;
-          break;
-      }
-      break;
-
     case 1:
-      switch (getVoiceNoPoly2(-1)) {
-        case 1:
-          voices[0].note = note;
-          note1 = note;
-          voices[0].velocity = velocity;
-          voices[0].timeOn = millis();
-          voices[0].keyDown = true;
-          digitalWrite(GATE_NOTE1, HIGH);
-          digitalWrite(TRIG_NOTE1, HIGH);
-          noteTrig[0] = millis();
-          voiceOn[0] = true;
-          break;
-      }
-      break;
-
     case 2:
-    case 3:
-    case 4:
+      if (keyboardMode == 0) {
+        S1 = 1;
+        S2 = 1;
+      }
+      if (keyboardMode == 1) {
+        S1 = 0;
+        S2 = 1;
+      }
       if (keyboardMode == 2) {
-        S1 = 1;
-        S2 = 1;
-      }
-      if (keyboardMode == 3) {
-        S1 = 0;
-        S2 = 1;
-      }
-      if (keyboardMode == 4) {
-        S1 = 0;
-        S2 = 0;
-      }
-      noteMsg = note;
-
-      if (velocity == 0) {
-        notes[noteMsg] = false;
-      } else {
-        notes[noteMsg] = true;
-      }
-
-      voices[0].velocity = velocity;
-
-      if (S1 && S2) {  // Highest note priority
-        commandTopNoteUni();
-      } else if (!S1 && S2) {  // Lowest note priority
-        commandBottomNoteUni();
-      } else {                 // Last note priority
-        if (notes[noteMsg]) {  // If note is on and using last note priority, add to ordered list
-          orderIndx = (orderIndx + 1) % 40;
-          noteOrder[orderIndx] = noteMsg;
-        }
-        commandLastNoteUni();
-      }
-      break;
-
-    case 5:
-    case 6:
-    case 7:
-      if (keyboardMode == 5) {
-        S1 = 1;
-        S2 = 1;
-      }
-      if (keyboardMode == 6) {
-        S1 = 0;
-        S2 = 1;
-      }
-      if (keyboardMode == 7) {
         S1 = 0;
         S2 = 0;
       }
@@ -969,75 +947,17 @@ void myNoteOn(byte channel, byte note, byte velocity) {
 void myNoteOff(byte channel, byte note, byte velocity) {
   switch (keyboardMode) {
     case 0:
-      switch (getVoiceNo(note)) {
-        case 1:
-          if (!voices[0].sustained) {
-            digitalWrite(GATE_NOTE1, LOW);
-            voices[0].note = -1;
-            voiceOn[0] = false;
-            voices[0].keyDown = false;
-          }
-          break;
-      }
-      break;
-
     case 1:
-      switch (getVoiceNoPoly2(note)) {
-        case 1:
-          if (!voices[0].sustained) {
-            digitalWrite(GATE_NOTE1, LOW);
-            voices[0].note = -1;
-            voiceOn[0] = false;
-            voices[0].keyDown = false;
-          }
-          break;
-      }
-      break;
-
     case 2:
-    case 3:
-    case 4:
+      if (keyboardMode == 0) {
+        S1 = 1;
+        S2 = 1;
+      }
+      if (keyboardMode == 1) {
+        S1 = 0;
+        S2 = 1;
+      }
       if (keyboardMode == 2) {
-        S1 = 1;
-        S2 = 1;
-      }
-      if (keyboardMode == 3) {
-        S1 = 0;
-        S2 = 1;
-      }
-      if (keyboardMode == 4) {
-        S1 = 0;
-        S2 = 0;
-      }
-      noteMsg = note;
-
-      notes[noteMsg] = false;
-
-      if (S1 && S2) {  // Highest note priority
-        commandTopNoteUni();
-      } else if (!S1 && S2) {  // Lowest note priority
-        commandBottomNoteUni();
-      } else {                 // Last note priority
-        if (notes[noteMsg]) {  // If note is on and using last note priority, add to ordered list
-          orderIndx = (orderIndx + 1) % 40;
-          noteOrder[orderIndx] = noteMsg;
-        }
-        commandLastNoteUni();
-      }
-      break;
-
-    case 5:
-    case 6:
-    case 7:
-      if (keyboardMode == 5) {
-        S1 = 1;
-        S2 = 1;
-      }
-      if (keyboardMode == 6) {
-        S1 = 0;
-        S2 = 1;
-      }
-      if (keyboardMode == 7) {
         S1 = 0;
         S2 = 0;
       }
@@ -1058,85 +978,6 @@ void myNoteOff(byte channel, byte note, byte velocity) {
       }
       break;
   }
-}
-
-int getVoiceNo(int note) {
-  voiceToReturn = -1;       //Initialise to 'null'
-  earliestTime = millis();  //Initialise to now
-  if (note == -1) {
-    //NoteOn() - Get the oldest free voice (recent voices may be still on release stage)
-    for (int i = 0; i < (polyphony + 2); i++) {
-      if (voices[i].note == -1) {
-        if (voices[i].timeOn < earliestTime) {
-          earliestTime = voices[i].timeOn;
-          voiceToReturn = i;
-        }
-      }
-    }
-    if (voiceToReturn == -1) {
-      //No free voices, need to steal oldest sounding voice
-      earliestTime = millis();  //Reinitialise
-      for (int i = 0; i < (polyphony + 2); i++) {
-        if (voices[i].timeOn < earliestTime) {
-          earliestTime = voices[i].timeOn;
-          voiceToReturn = i;
-        }
-      }
-    }
-    return voiceToReturn + 1;
-  } else {
-    //NoteOff() - Get voice number from note
-    for (int i = 0; i < (polyphony + 2); i++) {
-      if (voices[i].note == note) {
-        return i + 1;
-      }
-    }
-  }
-  //Shouldn't get here, return voice 1
-  return 1;
-}
-
-int getVoiceNoPoly2(int note) {
-  voiceToReturn = -1;       // Initialize to 'null'
-  earliestTime = millis();  // Initialize to now
-
-  if (note == -1) {
-    // NoteOn() - Get the oldest free voice (recent voices may still be on the release stage)
-    if (voices[lastUsedVoice].note == -1) {
-      return lastUsedVoice + 1;
-    }
-
-    // If the last used voice is not free or doesn't exist, check if the first voice is free
-    if (voices[0].note == -1) {
-      return 1;
-    }
-
-    // Find the lowest available voice for the new note
-    for (int i = 0; i < NO_OF_VOICES; i++) {
-      if (voices[i].note == -1) {
-        return i + 1;
-      }
-    }
-
-    // If no voice is available, release the oldest note
-    int oldestVoice = 0;
-    for (int i = 1; i < NO_OF_VOICES; i++) {
-      if (voices[i].timeOn < voices[oldestVoice].timeOn) {
-        oldestVoice = i;
-      }
-    }
-    return oldestVoice + 1;
-  } else {
-    // NoteOff() - Get the voice number from the note
-    for (int i = 0; i < NO_OF_VOICES; i++) {
-      if (voices[i].note == note) {
-        return i + 1;
-      }
-    }
-  }
-
-  // Shouldn't get here, return voice 1
-  return 1;
 }
 
 void updateTimers() {

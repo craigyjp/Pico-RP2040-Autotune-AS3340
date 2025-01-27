@@ -136,8 +136,20 @@ float midi_to_freqs[128][2] = {
   { 127, 6271.93 },
 };
 
+// Glide
+bool portamentoOn = false;        // Portamento state (on/off)
+uint16_t portamentoTime = 0;      // Portamento time in milliseconds (0–10000 ms)
+float currentFrequencyA = 0.0;    // Current frequency for channel_a
+float currentFrequencyB = 0.0;    // Current frequency for channel_b
+float targetFrequencyA = 0.0;     // Target frequency for channel_a
+float targetFrequencyB = 0.0;     // Target frequency for channel_b
+bool isPortamentoActive = false;  // Whether portamento is active
+unsigned long lastUpdateTime = 0; // Last update timestamp for portamento
+
+// Autotune
 int16_t autotune_value[128][2];
 int midiNote;
+int previousMidiNote = -1;
 volatile long count = 0; // Declare the global variable as volatile
 float frequency;        //storing frequency
 boolean autotuneStart = false;
@@ -149,11 +161,11 @@ const int numNotes = 128;       // Number of MIDI notes
 float targetFrequency = 0.00;
 int tuneNote = 0;
 byte note = 0;
+
 int OCTAVE_A = 0;
 int OCTAVE_B = 0;
 int VOLTOFFSET = 3270;
 int oscillator;
-float currentFrequency[128];
 int lastUsedVoice = 0; // Global variable to store the last used voice
 
 //
@@ -196,7 +208,7 @@ int previousMode;
 int transpose = 0;
 int8_t d2, i;
 int noteMsg;
-int keyboardMode = 0;
+int keyboardMode = 2;
 int octave = 0;
 int realoctave = -36;
 int bend_data;
