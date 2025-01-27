@@ -22,6 +22,7 @@ Using a Waveshare Zero Rp2040, the CV's, Pitchbend, CC, gates and triggers will 
 * MIDI CC numbers used to control functions
 
 * CC 01  Modulation Wheel 0-12
+* CC 05 Portamento Time
 * CC 14  VCO_B Interval. 0-127 (0-12 semitones)
 * CC 15  VCO_B Detune. 0-12
 * CC 16  PitchBend Depth. 0-127 (0-12 seimitones)
@@ -31,7 +32,7 @@ Using a Waveshare Zero Rp2040, the CV's, Pitchbend, CC, gates and triggers will 
 * CC 20  TM Aftertouch Depth. 0-127
 * CC 21  VCO_A Octave switch. (0-127) -1, 0, +1
 * CC 22  VCO_B Octave switch. (0-127) -1, 0, +1
-* CC 64  Sustain. 0-127  off < 63, on > 63
+* CC 65  Portamento Switch (0/127) Off/On
 * CC 121 Start Autotune Routine.  start 127
 * CC 122 Clear Autotune values. start 127
-* CC 127 Keyboard Mode  0-127, Poly1, Poly2, Unison T,B,L, Mono T, B, L
+* CC 127 Keyboard Mode  0-127, Mono Top, Bottom, Last (Default)
