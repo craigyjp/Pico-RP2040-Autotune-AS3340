@@ -804,65 +804,6 @@ void commandNote(int noteMsg) {
   noteTrig[0] = millis();
 }
 
-void commandTopNoteUni() {
-  int topNote = 0;
-  bool noteActive = false;
-
-  for (int i = 0; i < 128; i++) {
-    if (notes[i]) {
-      topNote = i;
-      noteActive = true;
-    }
-  }
-
-  if (noteActive) {
-    commandNoteUni(topNote);
-  } else {  // All notes are off, turn off gate
-    digitalWrite(GATE_NOTE1, LOW);
-  }
-}
-
-void commandBottomNoteUni() {
-  int bottomNote = 0;
-  bool noteActive = false;
-
-  for (int i = 87; i >= 0; i--) {
-    if (notes[i]) {
-      bottomNote = i;
-      noteActive = true;
-    }
-  }
-
-  if (noteActive) {
-    commandNoteUni(bottomNote);
-  } else {  // All notes are off, turn off gate
-    digitalWrite(GATE_NOTE1, LOW);
-  }
-}
-
-void commandLastNoteUni() {
-
-  int8_t noteIndx;
-
-  for (int i = 0; i < 40; i++) {
-    noteIndx = noteOrder[mod(orderIndx - i, 40)];
-    if (notes[noteIndx]) {
-      commandNoteUni(noteIndx);
-      return;
-    }
-  }
-  digitalWrite(GATE_NOTE1, LOW);
-}
-
-void commandNoteUni(int noteMsg) {
-
-  note1 = noteMsg;
-
-  digitalWrite(TRIG_NOTE1, HIGH);
-  noteTrig[0] = millis();
-  digitalWrite(GATE_NOTE1, HIGH);
-}
-
 void myNoteOn(byte channel, byte note, byte velocity) {
 
   //Check for out of range notes
