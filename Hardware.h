@@ -1,4 +1,5 @@
-#define NOTE_SF 137.2
+// #define NOTE_SF 137.2 // 1/2v octave
+#define NOTE_SF 274.4 // 1V/Octave
 #define VEL_SF 256.0
 
 #define CV_MAX_VOLTAGE 5.0  // Maximum input voltage for 5 octaves
