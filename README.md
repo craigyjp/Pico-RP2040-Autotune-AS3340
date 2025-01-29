@@ -4,7 +4,7 @@ A spin off from my 8 note poly MIDI to CV, a standalone dual oscillator with aut
 
 Using a YD-RP2040, the CV's, Pitchbend, CC, gates and triggers will all need some level conversion in hardware which I've covered in the schematic PDF. I've used matching 12k/36k resistors on the CV DAC level converters to give 4x conversion and this gives 1v/octave, Velocity uses 10k/10k for 2x conversion for 0-5v velocity range.
 
-# The Waveshare should be setup with a Flash Size of 1.5Mb/512Kb FS
+# The YD-RP2040 should be setup with a Flash Size of 1.5Mb/512Kb FS or something similar to allow storage.
 
 * The triggers and gates are currently +3.3v.
 * 1 filter CV outputs
