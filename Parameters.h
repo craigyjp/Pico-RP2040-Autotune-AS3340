@@ -139,12 +139,16 @@ float midi_to_freqs[128][2] = {
 // Glide
 bool portamentoOn = false;        // Portamento state (on/off)
 uint16_t portamentoTime = 0;      // Portamento time in milliseconds (0–10000 ms)
-float currentFrequencyA = 0.0;    // Current frequency for channel_a
-float currentFrequencyB = 0.0;    // Current frequency for channel_b
-float targetFrequencyA = 0.0;     // Target frequency for channel_a
-float targetFrequencyB = 0.0;     // Target frequency for channel_b
-bool isPortamentoActive = false;  // Whether portamento is active
-unsigned long lastUpdateTime = 0; // Last update timestamp for portamento
+bool portamentoActive = false;  // Tracks if portamento is currently running
+unsigned long glideStartTime = 0;  // Start time for portamento
+float currentMV_a = 0.0;           // Current mV value for channel_a
+float targetMV_a = 0.0;            // Target mV value for channel_a
+float currentMV_b = 0.0;           // Current mV value for channel_b
+float targetMV_b = 0.0;            // Target mV value for channel_b
+float initialMV_a = 0.0;           // Initial mV value for channel_a
+float initialMV_b = 0.0;           // Initial mV value for channel_b
+float step_a = 0.0;       // Step size for channel_a
+float step_b = 0.0;       // Step size for channel_b
 
 // Autotune
 int16_t autotune_value[128][2];
@@ -215,9 +219,6 @@ bool reset = false;
 bool displayvalues = false;
 bool osc1Through = false;
 byte sendnote, sendvelocity;
-
-float oscillator1a = 1.000;
-float oscillator1b = 1.000;
 
 unsigned int velmV;
 unsigned int mV;
