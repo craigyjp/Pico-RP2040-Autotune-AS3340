@@ -113,38 +113,122 @@ void muxRead() {
   if (mux1Read > (mux1ValuesPrev[muxInput] + QUANTISE_FACTOR) || mux1Read < (mux1ValuesPrev[muxInput] - QUANTISE_FACTOR)) {
     mux1ValuesPrev[muxInput] = mux1Read;
     switch (muxInput) {
-      case MUX1_FM_AT_DEPTH:  // AT depth to FM
-        FM_AT_WHEEL = mux1Read;
-        FM_AT_WHEEL = map(FM_AT_WHEEL, 0, 4095, 0, 16.12);
+
+      case MUX1_DETUNE:  // 0
+        value = mux1Read;
+        DETUNE = map(value, 0, 4095, 0, 127);
         break;
-      case MUX1_TM_MOD_DEPTH:  // Modwheel Depth to TM
-        TM_MOD_WHEEL = mux1Read;
-        TM_MOD_WHEEL = map(TM_MOD_WHEEL, 0, 4095, 0, 16.12);
+
+      case MUX1_INTERVAL:  // 1
+        value = mux1Read;
+        INTERVAL_POT = map(value, 0, 4095, 0, 12);
         break;
-      case MUX1_TM_AT_DEPTH:  // AT depth to TM
-        TM_AT_WHEEL = mux1Read;
-        TM_AT_WHEEL = map(TM_AT_WHEEL, 0, 4095, 0, 16.12);
-        break;
-      case MUX1_FM_MOD_DEPTH:  // Modwheel depth to FM
-        FM_MOD_WHEEL = mux1Read;
-        FM_MOD_WHEEL = map(FM_MOD_WHEEL, 0, 4095, 0, 16.12);
-        break;
-      case MUX1_spare4:  // 4
-        break;
-      case MUX1_spare5:  // 5
-        DETUNE = mux1Read;
-        DETUNE = map(DETUNE, 0, 4095, 0, 127);
-        break;
-      case MUX1_spare6:  // 6
-        INTERVAL_POT = mux1Read;
-        INTERVAL_POT = map(INTERVAL_POT, 0, 4095, 0, 12);
-        break;
+
       case MUX1_PB_DEPTH:  // 2
-        BEND_WHEEL = mux1Read;
-        BEND_WHEEL = map(BEND_WHEEL, 0, 4095, 0, 12);
+        value = mux1Read;
+        BEND_WHEEL = map(value, 0, 4095, 0, 12);
+        break;
+
+      case MUX1_FM_MOD_DEPTH:  // Modwheel depth to FM 3
+        value = mux1Read;
+        FM_MOD_WHEEL = map(value, 0, 4095, 0, 16.12);
+        break;
+
+      case MUX1_TM_MOD_DEPTH:  // Modwheel Depth to TM 4
+        value = mux1Read;
+        TM_MOD_WHEEL = map(value, 0, 4095, 0, 16.12);
+        break;  
+
+      case MUX1_FM_AT_DEPTH:  // AT depth to FM 5
+        value = mux1Read;
+        FM_AT_WHEEL = map(value, 0, 4095, 0, 16.12);
+        break;
+
+      case MUX1_TM_AT_DEPTH:  // AT depth to TM 6
+        value = mux1Read;
+        TM_AT_WHEEL = map(value, 0, 4095, 0, 16.12);
+        break;
+
+      case MUX1_GLIDE_TIME:  // 7
+        GLIDE_TIME = mux1Read;
+        portamentoTime = map(GLIDE_TIME, 0, 4095, 0, 10000);
+        break;
+
+      case MUX1_PW1:  // 8
+        value = mux1Read;
+        PW1 = map(value, 0, 4095, 0, 43253);
+        break;
+
+      case MUX1_PWM1_DEPTH:  // 9
+        value = mux1Read;
+        PWM1 = map(value, 0, 4095, 0, 26214);
+        break;
+
+      case MUX1_PW2:  // 10
+        value = mux1Read;
+        PW2 = map(value, 0, 4095, 0, 43253);
+        break;
+
+      case MUX1_PWM2_DEPTH:  // 11
+        value = mux1Read;
+        PWM2 = map(value, 0, 4095, 0, 26214);
+        break;
+
+      case MUX1_GLIDE_ON_OFF:  // 12
+        value = mux1Read;
+        portamentoOn = map(value, 0, 4095, 0, 1);
+        break;
+
+      case MUX1_NOTE_PRIORITY:  // 13
+        value = mux1Read;
+        value = map(value, 0, 127, 0, 2);
+        switch (value) {
+          case 0:
+            keyboardMode = 0;
+            break;
+          case 1:
+            keyboardMode = 1;
+            break;
+          case 2:
+            keyboardMode = 2;
+            break;
+        }
+        break;
+
+      case MUX1_OCTAVE_A:  // 14
+        value = mux1Read;
+        value = map(value, 0, 127, 0, 2);
+        switch (value) {
+          case 0:
+            OCTAVE_A = -12;
+            break;
+          case 1:
+            OCTAVE_A = 0;
+            break;
+          case 2:
+            OCTAVE_A = 12;
+            break;
+        }
+        break;
+
+      case MUX1_OCTAVE_B:  // 15
+        value = mux1Read;
+        value = map(value, 0, 127, 0, 2);
+        switch (value) {
+          case 0:
+            OCTAVE_B = -12;
+            break;
+          case 1:
+            OCTAVE_B = 0;
+            break;
+          case 2:
+            OCTAVE_B = 12;
+            break;
+        }
         break;
     }
   }
+
   muxInput++;
   if (muxInput >= MUXCHANNELS)
     muxInput = 0;
@@ -163,26 +247,21 @@ void readNoteCV() {
   Serial.print("ADC Value: ");
   Serial.println(adcValue);
 
-  // Step 2: Convert the ADC value to voltage
-  float voltage = (adcValue / (float)4096) * ADC_REF_VOLTAGE;
-
   // Step 3: Map voltage (1V/octave) to MIDI note (12 notes per octave)
-  int midiNote = (int)(voltage * 12.0);
+  int midiNote = map(adcValue, 0, 4095, 0, 127);
 
   // Debug output for calculated MIDI note
   Serial.print("Calculated MIDI Note: ");
   Serial.println(midiNote);
 
-  // Step 4: Constrain the MIDI note to the valid range (0-127)
-  midiNote = constrain(midiNote, 0, 127);
 
   // Step 5: Avoid retriggers for the same note
   if (midiNote != previousMidiNote) {
     if (midiNote > 0) {                     // Only trigger if the note is above 0
       myNoteOn(masterChan, midiNote, 127);  // Send MIDI Note On
-      if (previousMidiNote >= 0) {
-        myNoteOff(masterChan, previousMidiNote, 127);  // Turn off the previous note
-      }
+      // if (previousMidiNote >= 0) {
+      //   myNoteOff(masterChan, previousMidiNote, 127);  // Turn off the previous note
+      // }
     }
     previousMidiNote = midiNote;  // Update the last MIDI note
   }
@@ -484,9 +563,15 @@ void loop() {
     MIDI.read(masterChan);  //MIDI 5 Pin DIN
     //readNoteCV();
     mod_task();
+    pwm_task();
     adjustInterval();
     updateVoice1();
     muxRead();
+
+    int sensorVal = digitalRead(AUTO_BUTTON);
+    if (!sensorVal) {
+      startAutotune();
+    }
   }
 }
 
@@ -738,6 +823,22 @@ void myControlChange(byte channel, byte number, byte value) {
         }
         break;
 
+      case 23:
+        PW1 = map(value, 0, 127, 0, 43253);
+        break;
+
+      case 24:
+        PWM1 = map(value, 0, 127, 0, 43253);
+        break;
+
+      case 25:
+        PW2 = map(value, 0, 127, 0, 43253);
+        break;
+
+      case 26:
+        PWM2 = map(value, 0, 127, 0, 43253);
+        break; 
+
       case 65:  // Portamento on/off
         switch (value) {
           case 127:
@@ -769,6 +870,14 @@ void myControlChange(byte channel, byte number, byte value) {
         }
         break;
 
+      case 123:
+        switch (value) {
+          case 127:
+            allNotesOff();
+            break;
+        }
+        break;
+
       case 127:
         keyboardMode = map(value, 0, 127, 0, 2);
         if (keyboardMode > 0 && keyboardMode < 3) {
@@ -796,6 +905,15 @@ void mod_task() {
   FM_AT_VALUE = map(MOD_VALUE, 0, 4095, FM_AT_RANGE_LOWER, FM_AT_RANGE_UPPER);
   TM_VALUE = map(MOD_VALUE, 0, 4095, TM_RANGE_LOWER, TM_RANGE_UPPER);
   TM_AT_VALUE = map(MOD_VALUE, 0, 4095, TM_AT_RANGE_LOWER, TM_AT_RANGE_UPPER);
+}
+
+// Get the LFO input on the FM_INPUT
+void pwm_task() {
+
+  PWM_VALUE = analogRead(PWM_INPUT);
+  PWM1_VALUE = map(PWM_VALUE, 0, 4095, 0, PWM1);
+  PWM2_VALUE = map(PWM_VALUE, 0, 4095, 0, PWM2);
+
 }
 
 void commandTopNote() {
@@ -1033,6 +1151,18 @@ void updateVoice1() {
     velmV = ((unsigned int)((float)voices[0].velocity) * VEL_SF);
     vel_data1 = (channel_d & 0xFFF0000F) | (((int(velmV)) & 0xFFFF) << 4);
     outputDAC(DAC_NOTE1, vel_data1);
+
+    sample_data1 = (channel_e & 0xFFF0000F) | (((int(PW1)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
+
+    sample_data1 = (channel_f & 0xFFF0000F) | (((int(PWM1_VALUE)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
+
+    sample_data1 = (channel_g & 0xFFF0000F) | (((int(PW2)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
+
+    sample_data1 = (channel_h & 0xFFF0000F) | (((int(PWM2_VALUE)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
 
     // Update last update time
     lastUpdateTime = currentTime;

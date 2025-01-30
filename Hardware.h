@@ -14,6 +14,7 @@
 #define FM_INPUT 29
 #define VOLT_OCT_INPUT 28
 #define MUX_INPUT 27
+#define PWM_INPUT 26
 
 //Note DACS
 #define DAC_NOTE1 5
@@ -48,14 +49,22 @@
 #define MUX_S2 20
 #define MUX_S3 21
 
-#define MUX1_FM_AT_DEPTH 0
-#define MUX1_TM_MOD_DEPTH 1
-#define MUX1_TM_AT_DEPTH 2
+#define MUX1_DETUNE 0
+#define MUX1_INTERVAL 1
+#define MUX1_PB_DEPTH 2
 #define MUX1_FM_MOD_DEPTH 3
-#define MUX1_spare4 4
-#define MUX1_spare5 5
-#define MUX1_spare6 6
-#define MUX1_PB_DEPTH 7
+#define MUX1_TM_MOD_DEPTH 4
+#define MUX1_FM_AT_DEPTH 5
+#define MUX1_TM_AT_DEPTH 6
+#define MUX1_GLIDE_TIME 7
+#define MUX1_PW1 8
+#define MUX1_PWM1_DEPTH 9
+#define MUX1_PW2 10
+#define MUX1_PWM2_DEPTH 11
+#define MUX1_GLIDE_ON_OFF 12
+#define MUX1_NOTE_PRIORITY 13
+#define MUX1_OCTAVE_A 14
+#define MUX1_OCTAVE_B 15
 
 #define QUANTISE_FACTOR 10
 
