@@ -171,6 +171,11 @@ int OCTAVE_B = 0;
 int VOLTOFFSET = 3270;
 int oscillator;
 
+#define MUXCHANNELS 16
+static byte muxInput = 0;
+static int mux1ValuesPrev[MUXCHANNELS] = {};
+static int mux1Read = 0;
+
 //
 // Modulation
 //
@@ -222,8 +227,10 @@ byte sendnote, sendvelocity;
 
 unsigned int velmV;
 unsigned int mV;
+unsigned int additionalmV;
+unsigned int finalmV;
 
-float noteTrig[8];
+float noteTrig[1];
 
 uint32_t int_ref_on_flexible_mode = 0b00001001000010100000000000000000;  // { 0000 , 1001 , 0000 , 1010000000000000 , 0000 }
 

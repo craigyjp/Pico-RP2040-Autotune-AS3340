@@ -107,6 +107,54 @@ void setup() {
   loadTuningCorrectionsFromSD();
 }
 
+void muxRead() {
+  mux1Read = analogRead(MUX_INPUT);
+
+  if (mux1Read > (mux1ValuesPrev[muxInput] + QUANTISE_FACTOR) || mux1Read < (mux1ValuesPrev[muxInput] - QUANTISE_FACTOR)) {
+    mux1ValuesPrev[muxInput] = mux1Read;
+    switch (muxInput) {
+      case MUX1_FM_AT_DEPTH:  // AT depth to FM
+        FM_AT_WHEEL = mux1Read;
+        FM_AT_WHEEL = map(FM_AT_WHEEL, 0, 4095, 0, 16.12);
+        break;
+      case MUX1_TM_MOD_DEPTH:  // Modwheel Depth to TM
+        TM_MOD_WHEEL = mux1Read;
+        TM_MOD_WHEEL = map(TM_MOD_WHEEL, 0, 4095, 0, 16.12);
+        break;
+      case MUX1_TM_AT_DEPTH:  // AT depth to TM
+        TM_AT_WHEEL = mux1Read;
+        TM_AT_WHEEL = map(TM_AT_WHEEL, 0, 4095, 0, 16.12);
+        break;
+      case MUX1_FM_MOD_DEPTH:  // Modwheel depth to FM
+        FM_MOD_WHEEL = mux1Read;
+        FM_MOD_WHEEL = map(FM_MOD_WHEEL, 0, 4095, 0, 16.12);
+        break;
+      case MUX1_spare4:  // 4
+        break;
+      case MUX1_spare5:  // 5
+        DETUNE = mux1Read;
+        DETUNE = map(DETUNE, 0, 4095, 0, 127);
+        break;
+      case MUX1_spare6:  // 6
+        INTERVAL_POT = mux1Read;
+        INTERVAL_POT = map(INTERVAL_POT, 0, 4095, 0, 12);
+        break;
+      case MUX1_PB_DEPTH:  // 2
+        BEND_WHEEL = mux1Read;
+        BEND_WHEEL = map(BEND_WHEEL, 0, 4095, 0, 12);
+        break;
+    }
+  }
+  muxInput++;
+  if (muxInput >= MUXCHANNELS)
+    muxInput = 0;
+
+  digitalWrite(MUX_S0, muxInput & 0b0001);
+  digitalWrite(MUX_S1, muxInput & 0b0010);
+  digitalWrite(MUX_S2, muxInput & 0b0100);
+  digitalWrite(MUX_S3, muxInput & 0b1000);
+}
+
 void readNoteCV() {
   // Step 1: Read the analog input (0-4095 for 12-bit ADC)
   int adcValue = analogRead(VOLT_OCT_INPUT);
@@ -201,6 +249,7 @@ void loadTuningCorrectionsFromSD() {
 void startAutotune() {
   pixels.setPixelColor(0, pixels.Color(255, 0, 0));  // RED
   pixels.show();
+  digitalWrite(TUNE_LED, HIGH);
   allNotesOff();
   autotuneStart = true;
   oscillator = 0;
@@ -289,6 +338,7 @@ void autotune() {
       Serial.println("Auto Tune Finished");
       pixels.setPixelColor(0, pixels.Color(0, 255, 0));  // GREEN
       pixels.show();
+      digitalWrite(TUNE_LED, LOW);
       digitalWrite(MUX_ENABLE, HIGH);
     } else {
       // Switch to the next oscillator
@@ -436,6 +486,7 @@ void loop() {
     mod_task();
     adjustInterval();
     updateVoice1();
+    muxRead();
   }
 }
 
@@ -553,8 +604,8 @@ void myPitchBend(byte channel, int bend) {
 
 void adjustInterval() {
   if (INTERVAL_POT != INTERVAL) {
-    // Serial.print("Interval setting ");
-    // Serial.println(INTERVAL_POT);
+    Serial.print("Interval setting ");
+    Serial.println(INTERVAL_POT);
   }
   switch (INTERVAL_POT) {
     case 12:
@@ -810,26 +861,27 @@ void myNoteOn(byte channel, byte note, byte velocity) {
   //Check for out of range notes
   if (note < 0 || note > 127) return;
 
-  // Calculate the target mV value for channel_a, including all corrections
-  oscanote1 = note + OCTAVE_A;
-  targetMV_a = (unsigned int)(((float)(oscanote1 + transpose + realoctave) * NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE) + (autotune_value[oscanote1][0]));
+    // Calculate new target mV values including all real-time corrections
+    //oscanote1 = note + OCTAVE_A;
+    targetMV_a = (unsigned int)(((float)(note + transpose + realoctave) * NOTE_SF + 0.5) +
+                                (autotune_value[note][0]));
 
-  // Calculate the target mV value for channel_b, including all corrections
-  oscbnote1 = note + INTERVAL + OCTAVE_B;
-  targetMV_b = (unsigned int)(((float)(oscbnote1 + transpose + realoctave) * NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE + DETUNE) + (autotune_value[oscbnote1][1]));
+    //oscbnote1 = note + INTERVAL + OCTAVE_B;
+    targetMV_b = (unsigned int)(((float)(note + transpose + realoctave) * NOTE_SF + 0.5) +
+                                (autotune_value[note][1]));
 
-  if (portamentoOn) {
-    // Portamento active: Initialize glide
-    initialMV_a = currentMV_a;  // Start from the current mV values
-    initialMV_b = currentMV_b;
-    glideStartTime = millis();  // Start portamento
-    portamentoActive = true;    // Enable portamento logic
-  } else {
-    // No portamento: Directly set the current values to the target values
-    currentMV_a = targetMV_a;
-    currentMV_b = targetMV_b;
-    portamentoActive = false;
-  }
+    if (portamentoOn) {
+        // If portamento is enabled, start glide from the **current** value
+        initialMV_a = currentMV_a;  
+        initialMV_b = currentMV_b;
+        glideStartTime = millis();  // Start the glide transition
+        portamentoActive = true;
+    } else {
+        // If portamento is OFF, instantly set frequency
+        currentMV_a = targetMV_a;
+        currentMV_b = targetMV_b;
+        portamentoActive = false;
+    }
 
   switch (keyboardMode) {
 
@@ -875,12 +927,12 @@ void myNoteOn(byte channel, byte note, byte velocity) {
 // MIDI Note Off callback
 void myNoteOff(byte channel, byte note, byte velocity) {
 
-  if (portamentoActive) {
-    // Immediately finish the glide on note-off
-    currentMV_a = targetMV_a;
-    currentMV_b = targetMV_b;
-    portamentoActive = false;  // Stop the glide
-  }
+  // if (portamentoActive) {
+  //   // Immediately finish the glide on note-off
+  //   currentMV_a = targetMV_a;
+  //   currentMV_b = targetMV_b;
+  //   portamentoActive = false;  // Stop the glide
+  // }
 
   switch (keyboardMode) {
     case 0:
@@ -927,75 +979,64 @@ void updateTimers() {
 
 // Updates the DAC with the note1 data and adds in all offsets, bend, modulation, aftertouch, octave range
 void updateVoice1() {
-  static unsigned long lastUpdateTime = 0;  // Tracks the last time this function was called
-  unsigned long currentTime = millis();     // Get the current time in milliseconds
+    static unsigned long lastUpdateTime = 0;  // Tracks the last time this function was called
+    unsigned long currentTime = millis();     // Get the current time in milliseconds
+    unsigned long deltaTime = currentTime - lastUpdateTime;
 
-  // Calculate the time elapsed since the last update
-  unsigned long deltaTime = currentTime - lastUpdateTime;
+    if (portamentoActive) {
+        // Calculate the progress as a fraction of portamentoTime
+        float progress = (float)(millis() - glideStartTime) / (float)portamentoTime;
 
-  if (portamentoActive) {
-    // Calculate the progress as a fraction of portamentoTime
-    float progress = (float)(millis() - glideStartTime) / (float)portamentoTime;
+        // Clamp progress between 0.0 and 1.0
+        if (progress > 1.0) progress = 1.0;
 
-    // Clamp progress between 0.0 and 1.0
-    if (progress > 1.0) progress = 1.0;
+        // Apply an **adjusted** exponential scaling for smooth glide
+        float rate = 3.5;  // Tweak this value for a more natural feel
+        float exponentialProgress = (1.0 - exp(-rate * progress)) / (1.0 - exp(-rate));
 
-    // Apply exponential scaling to the progress
-    float rate = 5.0;                                                                // Adjust the steepness of the curve (higher is steeper)
-    float exponentialProgress = (1.0 - exp(-rate * progress)) / (1.0 - exp(-rate));  // Normalized exponential
+        // Interpolate currentMV values for an **exponential glide**
+        currentMV_a = initialMV_a + (targetMV_a - initialMV_a) * exponentialProgress;
+        currentMV_b = initialMV_b + (targetMV_b - initialMV_b) * exponentialProgress;
 
-    // Interpolate currentMV values for exponential glide
-    currentMV_a = initialMV_a + (targetMV_a - initialMV_a) * exponentialProgress;
-    currentMV_b = initialMV_b + (targetMV_b - initialMV_b) * exponentialProgress;
-
-    // Check if portamento is complete
-    if (progress >= 1.0) {
-      currentMV_a = targetMV_a;
-      currentMV_b = targetMV_b;
-      portamentoActive = false;  // Disable portamento logic
+        // If the glide is **complete**, snap to final values and disable glide
+        if (progress >= 1.0) {
+            currentMV_a = targetMV_a;
+            currentMV_b = targetMV_b;
+            portamentoActive = false;
+        }
     }
-  }
 
-  // Output the current mV value to the DAC for channel_a
-  sample_data1 = (channel_a & 0xFFF0000F) | (((int(currentMV_a)) & 0xFFFF) << 4);
-  outputDAC(DAC_NOTE1, sample_data1);
+    // Now continuously apply parameters to the frequency calculation
 
-  // Output the current mV value to the DAC for channel_b
-  sample_data1 = (channel_b & 0xFFF0000F) | (((int(currentMV_b)) & 0xFFFF) << 4);
-  outputDAC(DAC_NOTE1, sample_data1);
+    // Calculate mV for channel_a (Oscillator A)
+    oscanote1 = note1 + OCTAVE_A;  // Apply the correct octave adjustment for this oscillator
+    additionalmV = (unsigned int)(((float)(OCTAVE_A) * NOTE_SF + 0.5) + 
+                        (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE) + (autotune_value[oscanote1][0]));
+    finalmV = (currentMV_a  + additionalmV);
+    sample_data1 = (channel_a & 0xFFF0000F) | (((int(finalmV)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
 
-  mV = (unsigned int)(((float)(note1 + transpose + realoctave) * NOTE_SF * 1.00 + 0.5) + (TM_VALUE));
-  sample_data1 = (channel_c & 0xFFF0000F) | (((int(mV)) & 0xFFFF) << 4);
-  outputDAC(DAC_NOTE1, sample_data1);
+    // Calculate mV for channel_b (Oscillator B)
+    oscbnote1 = note1 + INTERVAL + OCTAVE_B;  // Apply interval and octave B adjustments
+    additionalmV = (unsigned int)(((float)(INTERVAL + OCTAVE_B) * NOTE_SF + 0.5) + 
+                        (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE + DETUNE) + (autotune_value[oscbnote1][1]));
+    finalmV = (currentMV_b  + additionalmV);                   
+    sample_data1 = (channel_b & 0xFFF0000F) | (((int(finalmV)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
 
-  // Velocity CV
-  velmV = ((unsigned int)((float)voices[0].velocity) * VEL_SF);
-  vel_data1 = (channel_d & 0xFFF0000F) | (((int(velmV)) & 0xFFFF) << 4);
-  outputDAC(DAC_NOTE1, vel_data1);
+    // Apply TM_VALUE (presumably for a modulating signal)
+    mV = (unsigned int)(((float)(note1 + transpose + realoctave) * NOTE_SF + 0.5) + (TM_VALUE));
+    sample_data1 = (channel_c & 0xFFF0000F) | (((int(mV)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, sample_data1);
 
-  // Update the last update time
-  lastUpdateTime = currentTime;
+    // Apply velocity (velocity CV output)
+    velmV = ((unsigned int)((float)voices[0].velocity) * VEL_SF);
+    vel_data1 = (channel_d & 0xFFF0000F) | (((int(velmV)) & 0xFFFF) << 4);
+    outputDAC(DAC_NOTE1, vel_data1);
+
+    // Update last update time
+    lastUpdateTime = currentTime;
 }
-
-
-
-// Updates the DAC with the note1 data and adds in all offsets, bend, modulation, aftertouch, octave range
-// void updateVoice1() {
-//   oscanote1 = note1 + OCTAVE_A;
-//   mV = (unsigned int)(((float)(oscanote1 + transpose + realoctave) * NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE) + (autotune_value[oscanote1][0]));
-//   sample_data1 = (channel_a & 0xFFF0000F) | (((int(mV)) & 0xFFFF) << 4);
-//   outputDAC(DAC_NOTE1, sample_data1);
-//   oscbnote1 = note1 + INTERVAL + OCTAVE_B;
-//   mV = (unsigned int)(((float)(oscbnote1 + transpose + realoctave) * NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE + DETUNE) + (autotune_value[oscbnote1][1]));
-//   sample_data1 = (channel_b & 0xFFF0000F) | (((int(mV)) & 0xFFFF) << 4);
-//   outputDAC(DAC_NOTE1, sample_data1);
-//   mV = (unsigned int)(((float)(note1 + transpose + realoctave) * NOTE_SF * 1.00 + 0.5) + (TM_VALUE));
-//   sample_data1 = (channel_c & 0xFFF0000F) | (((int(mV)) & 0xFFFF) << 4);
-//   outputDAC(DAC_NOTE1, sample_data1);
-//   velmV = ((unsigned int)((float)voices[0].velocity) * VEL_SF);
-//   vel_data1 = (channel_d & 0xFFF0000F) | (((int(velmV)) & 0xFFFF) << 4);
-//   outputDAC(DAC_NOTE1, vel_data1);
-// }
 
 // Resets all the notes to off
 void allNotesOff() {
