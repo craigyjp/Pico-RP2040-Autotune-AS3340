@@ -30,7 +30,12 @@ Using a YD-RP2040, the CV's, Pitchbend, CC, gates and triggers will all need som
 * CC 20  TM Aftertouch Depth. 0-127
 * CC 21  VCO_A Octave switch. (0-127) -1, 0, +1
 * CC 22  VCO_B Octave switch. (0-127) -1, 0, +1
+* CC 23  Pulse Width VCO_A. (0-127)
+* CC 24  PWM depth VCO_A. (0-127)
+* CC 23  Pulse Width VCO_B. (0-127)
+* CC 24  PWM depth VCO_B. (0-127) 
 * CC 65  Portamento Switch (0/127) Off/On
 * CC 121 Start Autotune Routine.  start 127
 * CC 122 Clear Autotune values. start 127
+* CC 123 All notes Off
 * CC 127 Keyboard Mode  0-127, Mono Top, Bottom, Last (Default)
