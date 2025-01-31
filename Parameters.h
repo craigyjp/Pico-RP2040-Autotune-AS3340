@@ -171,6 +171,12 @@ int OCTAVE_B = 0;
 int VOLTOFFSET = 3270;
 int oscillator;
 
+#define MUXCHANNELS 16
+static byte muxInput = 0;
+static int mux1ValuesPrev[MUXCHANNELS] = {};
+static int mux1Read = 0;
+int value;
+
 //
 // Modulation
 //
@@ -209,6 +215,8 @@ int PWM2 = 0;
 float PWM_VALUE = 0.00f;
 float PWM1_VALUE = 0.00f;
 float PWM2_VALUE = 0.00f;
+
+int GLIDE_TIME = 0;
 
 int masterChan;
 int masterTran;
