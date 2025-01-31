@@ -13,7 +13,7 @@
 
 #define FM_INPUT 29
 #define VOLT_OCT_INPUT 28
-#define MUX_INPUT 27
+// 27 is used for mux on main
 #define PWM_INPUT 26
 
 //Note DACS
@@ -43,31 +43,6 @@
 //Gate outputs
 #define SYNC_PIN 14
 
-//Mux input pins 
-#define MUX_S0 18
-#define MUX_S1 19
-#define MUX_S2 20
-#define MUX_S3 21
-
-#define MUX1_DETUNE 0
-#define MUX1_INTERVAL 1
-#define MUX1_PB_DEPTH 2
-#define MUX1_FM_MOD_DEPTH 3
-#define MUX1_TM_MOD_DEPTH 4
-#define MUX1_FM_AT_DEPTH 5
-#define MUX1_TM_AT_DEPTH 6
-#define MUX1_GLIDE_TIME 7
-#define MUX1_PW1 8
-#define MUX1_PWM1_DEPTH 9
-#define MUX1_PW2 10
-#define MUX1_PWM2_DEPTH 11
-#define MUX1_GLIDE_ON_OFF 12
-#define MUX1_NOTE_PRIORITY 13
-#define MUX1_OCTAVE_A 14
-#define MUX1_OCTAVE_B 15
-
-#define QUANTISE_FACTOR 10
-
 void setupHardware() {
 
   analogReadResolution(12);
@@ -94,16 +69,6 @@ void setupHardware() {
 
   pinMode(DAC_NOTE1, OUTPUT);
   digitalWrite(DAC_NOTE1, HIGH);
-
-  pinMode(MUX_S0, OUTPUT);
-  pinMode(MUX_S1, OUTPUT);
-  pinMode(MUX_S2, OUTPUT);
-  pinMode(MUX_S3, OUTPUT);
-
-  digitalWrite(MUX_S0, LOW);
-  digitalWrite(MUX_S1, LOW);
-  digitalWrite(MUX_S2, LOW);
-  digitalWrite(MUX_S3, LOW);
 
   SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
   digitalWrite(DAC_NOTE1, LOW);
