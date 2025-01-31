@@ -156,22 +156,22 @@ void muxRead() {
 
       case MUX1_PW1:  // 8
         value = mux1Read;
-        PW1 = map(value, 0, 4095, 0, 43253);
+        PW1 = map(value, 0, 4095, 0, 17000);
         break;
 
       case MUX1_PWM1_DEPTH:  // 9
         value = mux1Read;
-        PWM1 = map(value, 0, 4095, 0, 26214);
+        PWM1 = map(value, 0, 4095, 0, 20000);
         break;
 
       case MUX1_PW2:  // 10
         value = mux1Read;
-        PW2 = map(value, 0, 4095, 0, 43253);
+        PW2 = map(value, 0, 4095, 0, 17000);
         break;
 
       case MUX1_PWM2_DEPTH:  // 11
         value = mux1Read;
-        PWM2 = map(value, 0, 4095, 0, 26214);
+        PWM2 = map(value, 0, 4095, 0, 20000);
         break;
 
       case MUX1_GLIDE_ON_OFF:  // 12
@@ -358,8 +358,8 @@ void autotune() {
   Serial.print("Initial Frequency: ");
   Serial.println(initialFreq);
 
-  int minError = -1023;
-  int maxError = 1023;
+  int minError = -255;
+  int maxError = 255;
   int bestError = 0;
   double bestFreqDiff = DBL_MAX;
 
@@ -824,20 +824,20 @@ void myControlChange(byte channel, byte number, byte value) {
         break;
 
       case 23:
-        PW1 = map(value, 0, 127, 0, 43253);
+        PW1 = map(value, 0, 127, 0, 17000);
         break;
 
       case 24:
-        PWM1 = map(value, 0, 127, 0, 43253);
+        PWM1 = map(value, 0, 127, 0, 20000);
         break;
 
       case 25:
-        PW2 = map(value, 0, 127, 0, 43253);
+        PW2 = map(value, 0, 127, 0, 17000);
         break;
 
       case 26:
-        PWM2 = map(value, 0, 127, 0, 43253);
-        break; 
+        PWM2 = map(value, 0, 127, 0, 20000);
+        break;    
 
       case 65:  // Portamento on/off
         switch (value) {
