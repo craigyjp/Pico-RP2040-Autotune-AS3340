@@ -39,3 +39,13 @@ Using a YD-RP2040, the CV's, Pitchbend, CC, gates and triggers will all need som
 * CC 122 Clear Autotune values. start 127
 * CC 123 All notes Off
 * CC 127 Keyboard Mode  0-127, Mono Top, Bottom, Last (Default)
+
+# Calibration
+
+In normal operation the autotune LED will be unlit, the pixel LED on the YD-RP2040 will be green, when auto tune is active the autotune LED will illuminate and the pixel LED will change to red until the first oscillator has been tuned and then it will change to blue for the second oscillator, finally it will return to green when the auto tune is complete. Also the autotune LED will extinguish and you can play notes again on the keyboard.
+
+After construction, using a midi keyboard tune the VCO's using the Tune trimmer to 27.5 Hz when note 33 is played, then retune with the scale pot to 880 Hz when playing note 93. Repeat the process for both oscillators until they are approximately in tune at both ends of the keyboard. Press the autotune button and measure with a scope the signal coming out of pin 4 of the 74HC14, its should be a clean pulse of about 10-15% duty cycle. Adjust the autotune pot to get the required pulse width. There might be nothing there until the trimmer is adjusted to trigger the input on pin 1 of the 74HC14. When you have a good signal on the output of the 74HC14 you can run auto tune again as it should be able to now pull in the notes.
+
+FM input, with all modulation controls set to minimum, adjust the offset trimmer on the FM input to measure 1.65V on the FM input (pin 29) of the YD-RP2040. This allows the LFO signal to swing positive and negative.
+
+PWM input, as with the FM input, adjust the trimmer for PWM to measure 1.65V on the PWM input (pin 26) of the YD-RP2040. This allows the modulation source of the PWM to swing positive and negative.
