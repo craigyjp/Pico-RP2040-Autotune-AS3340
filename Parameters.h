@@ -217,6 +217,7 @@ float PWM2_VALUE = 0.00f;
 
 int GLIDE_TIME = 0;
 
+bool cvMidi = true;
 int masterChan;
 int masterTran;
 int previousMode;

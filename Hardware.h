@@ -62,7 +62,7 @@
 #define MUX1_PW2 10
 #define MUX1_PWM2_DEPTH 11
 #define MUX1_GLIDE_ON_OFF 12
-#define MUX1_NOTE_PRIORITY 13
+#define MUX1_CV_MIDI 13
 #define MUX1_OCTAVE_A 14
 #define MUX1_OCTAVE_B 15
 
