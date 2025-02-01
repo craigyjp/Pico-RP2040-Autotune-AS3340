@@ -153,7 +153,6 @@ float step_b = 0.0;       // Step size for channel_b
 // Autotune
 int16_t autotune_value[128][2];
 int midiNote;
-int previousMidiNote = -1;
 volatile long count = 0; // Declare the global variable as volatile
 float frequency;        //storing frequency
 boolean autotuneStart = false;
@@ -235,6 +234,31 @@ bool reset = false;
 bool displayvalues = false;
 bool osc1Through = false;
 byte sendnote, sendvelocity;
+
+// Note input
+float AD_CH1, old_AD_CH1, AD_CH2, old_AD_CH2;
+float AD_CH1_calb = 1.0;//reduce resistance error
+float AD_CH2_calb = 1.0;//reduce resistance error
+int sens1, sens2, oct1, oct2; //sens = AD input attn,amp.oct=octave shift
+static int previousMidiNote = -1;  // Stores the last played note
+static int old_ADC = 0;
+int search_qnt;
+int cmp1, cmp2;
+uint16_t cv_qnt_thr_buf1[61] = {
+    0, 68, 136, 204, 272, 340, 408, 476, 544, 612, 680, 748, 816,
+    884, 952, 1020, 1088, 1156, 1224, 1292, 1360, 1428, 1496, 1564, 1632,
+    1700, 1768, 1836, 1904, 1972, 2040, 2108, 2176, 2244, 2312, 2380,
+    2448, 2516, 2584, 2652, 2720, 2788, 2856, 2924, 2992, 3060, 3128,
+    3196, 3264, 3332, 3400, 3468, 3536, 3604, 3672, 3740, 3808, 3876,
+    3944, 4012, 4080
+};
+
+#define NUM_SAMPLES 5  // Number of samples for smoothing
+int adcBuffer[NUM_SAMPLES] = {0};  
+int bufferIndex = 0;
+#define ADC_NOISE_THRESHOLD 10  // Ignore ADC values below this
+#define HYSTERESIS_THRESHOLD 5  // Minimum change to trigger new note
+#define ADC_OFFSET 29   // Measured ADC offset at 0V
 
 unsigned int velmV;
 unsigned int mV;

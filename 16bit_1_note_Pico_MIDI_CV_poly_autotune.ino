@@ -240,30 +240,59 @@ void muxRead() {
 }
 
 void readNoteCV() {
-  // Step 1: Read the analog input (0-4095 for 12-bit ADC)
-  int adcValue = analogRead(VOLT_OCT_INPUT);
 
-  // Debug output for the ADC value
-  Serial.print("ADC Value: ");
-  Serial.println(adcValue);
+  // Step 1: Read ADC and apply calibration
+  adcBuffer[bufferIndex] = analogRead(VOLT_OCT_INPUT) * AD_CH1_calb;
+  bufferIndex = (bufferIndex + 1) % NUM_SAMPLES;
 
-  // Step 3: Map voltage (1V/octave) to MIDI note (12 notes per octave)
-  int midiNote = map(adcValue, 0, 4095, 0, 127);
+  // Compute moving average
+  int adcSum = 0;
+  for (int i = 0; i < NUM_SAMPLES; i++) {
+    adcSum += adcBuffer[i];
+  }
+  int adcValue = (adcSum / NUM_SAMPLES) - ADC_OFFSET;  // Offset correction
 
-  // Debug output for calculated MIDI note
-  Serial.print("Calculated MIDI Note: ");
-  Serial.println(midiNote);
+  // Prevent negative values
+  if (adcValue < 0) {
+    adcValue = 0;
+  }
 
+  // Step 3: Ignore small changes
+  if (abs(old_ADC - adcValue) > HYSTERESIS_THRESHOLD) {
+    
+    // Step 4: Quantize input
+    for (int i = 0; i <= 60; i++) {
 
-  // Step 5: Avoid retriggers for the same note
-  if (midiNote != previousMidiNote) {
-    if (midiNote > 0) {                     // Only trigger if the note is above 0
-      myNoteOn(masterChan, midiNote, 127);  // Send MIDI Note On
-      // if (previousMidiNote >= 0) {
-      //   myNoteOff(masterChan, previousMidiNote, 127);  // Turn off the previous note
-      // }
+      if (adcValue >= cv_qnt_thr_buf1[i] && adcValue < cv_qnt_thr_buf1[i + 1]) {
+        search_qnt = i;
+        cmp1 = adcValue - cv_qnt_thr_buf1[i];
+        cmp2 = cv_qnt_thr_buf1[i + 1] - adcValue;
+        break;
+      }
     }
-    previousMidiNote = midiNote;  // Update the last MIDI note
+
+    // Failsafe: If no match is found, force a default note
+    if (search_qnt == -1) {
+      Serial.println("⚠️ No quantized match found! Using default fallback.");
+      search_qnt = 0;  
+    }
+
+    int quantizedValue = (cmp1 >= cmp2) ? cv_qnt_thr_buf1[search_qnt + 1] : cv_qnt_thr_buf1[search_qnt];
+    quantizedValue = constrain(quantizedValue, 0, 4095);
+
+    // Convert to MIDI note
+    int midiNote = round(quantizedValue / 68.0);
+
+    // Step 6: Send MIDI if note has changed
+    if (midiNote != previousMidiNote) {
+      if (previousMidiNote >= 0) {
+        myNoteOff(masterChan, previousMidiNote, 127);
+      }
+      myNoteOn(masterChan, midiNote + 36, 127);
+      previousMidiNote = midiNote + 36;
+    }
+    
+    old_ADC = adcValue;
   }
 }
 
@@ -561,7 +590,7 @@ void loop() {
   } else {
     updateTimers();
     MIDI.read(masterChan);  //MIDI 5 Pin DIN
-    //readNoteCV();
+    readNoteCV();
     mod_task();
     pwm_task();
     adjustInterval();
