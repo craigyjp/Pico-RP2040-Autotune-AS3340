@@ -15,12 +15,12 @@ Using a YD-RP2040, the CV's, Pitchbend, CC, gates and triggers will all need som
 * Oscillator 2 detune 
 * Oscillator 2 interval settings 0-12 semitones 
 
-# During the testing all the controls were done manually with pots and buttons, but to be integrated into a synth these functions need to be controlled over MIDI.
+# During the testing all the controls were done manually with pots and buttons, but to be integrated into a polysynth these functions can be controlled over MIDI.
 
 * MIDI CC numbers used to control functions
 
 * CC 01  Modulation Wheel 0-12
-* CC 05 Portamento Time
+* CC 05  Portamento Time
 * CC 14  VCO_B Interval. 0-127 (0-12 semitones)
 * CC 15  VCO_B Detune. 0-12
 * CC 16  PitchBend Depth. 0-127 (0-12 seimitones)
@@ -38,7 +38,6 @@ Using a YD-RP2040, the CV's, Pitchbend, CC, gates and triggers will all need som
 * CC 121 Start Autotune Routine.  start 127
 * CC 122 Clear Autotune values. start 127
 * CC 123 All notes Off
-* CC 127 Keyboard Mode  0-127, Mono Top, Bottom, Last (Default)
 
 # Calibration
 
