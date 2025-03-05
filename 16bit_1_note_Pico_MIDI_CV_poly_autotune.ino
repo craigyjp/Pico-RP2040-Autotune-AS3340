@@ -1152,14 +1152,14 @@ void updateVoice1() {
 
   // Calculate mV for channel_a (Oscillator A)
   oscanote1 = note1 + OCTAVE_A;  // Apply the correct octave adjustment for this oscillator
-  additionalmV = (unsigned int)(((float)(OCTAVE_A)*NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE) + (autotune_value[oscanote1][0]));
+  additionalmV = (unsigned int)(((float)(OCTAVE_A)*NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE));
   finalmV = (currentMV_a + additionalmV);
   sample_data1 = (channel_a & 0xFFF0000F) | (((int(finalmV)) & 0xFFFF) << 4);
   outputDAC(DAC_NOTE1, sample_data1);
 
   // Calculate mV for channel_b (Oscillator B)
   oscbnote1 = note1 + INTERVAL + OCTAVE_B;  // Apply interval and octave B adjustments
-  additionalmV = (unsigned int)(((float)(INTERVAL + OCTAVE_B) * NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE + DETUNE) + (autotune_value[oscbnote1][1]));
+  additionalmV = (unsigned int)(((float)(INTERVAL + OCTAVE_B) * NOTE_SF + 0.5) + (VOLTOFFSET + bend_data + FM_VALUE + FM_AT_VALUE + DETUNE));
   finalmV = (currentMV_b + additionalmV);
   sample_data1 = (channel_b & 0xFFF0000F) | (((int(finalmV)) & 0xFFFF) << 4);
   outputDAC(DAC_NOTE1, sample_data1);
